@@ -1,0 +1,7 @@
+SecurityEvent
+| where EventID == 4625
+| extend TargetUser = tostring(TargetUserName)
+| where isnotempty(TargetUser)
+| summarize FailedLogins = count(), SourceIPs = make_set(RemoteIp, 10)
+          by TargetUser, bin(TimeGenerated, 5m)
+| where FailedLogins >= 10
