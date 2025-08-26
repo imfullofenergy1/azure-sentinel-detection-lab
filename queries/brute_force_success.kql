@@ -1,0 +1,21 @@
+let window = 10m;
+let fails = SecurityEvent
+| where TimeGenerated >= ago(window)
+| where EventID == 4625
+| extend TargetUser = tostring(TargetUserName)
+| where isnotempty(TargetUser)
+| summarize FailCount = count(),
+            FirstFail = min(TimeGenerated),
+            LastFail  = max(TimeGenerated) by TargetUser;
+
+let success = SecurityEvent
+| where TimeGenerated >= ago(window)
+| where EventID == 4624
+| extend TargetUser = tostring(TargetUserName)
+| where isnotempty(TargetUser)
+| project TargetUser, SuccessTime = TimeGenerated, LogonType;
+
+fails
+| join kind=inner success on TargetUser
+| where FailCount >= 5
+| project TargetUser, FailCount, FirstFail, LastFail, SuccessTime, LogonType
